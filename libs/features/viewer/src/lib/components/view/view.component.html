@@ -1,2 +1,9 @@
-<div class="panel"></div>
-<div class="content"></div>
+<nz-layout>
+  <nz-header class="header">
+    <h2 class="title"></h2>
+    <tt-viewer-scale-control
+      (valueChange)="documentScale.set($event)"
+    ></tt-viewer-scale-control>
+  </nz-header>
+  <nz-content></nz-content>
+</nz-layout>

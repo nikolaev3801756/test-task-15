@@ -1,0 +1,11 @@
+:host {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  align-items: center;
+  gap: 16px;
+}
+
+.percent {
+  color: white;
+  font-size: 16px;
+}
