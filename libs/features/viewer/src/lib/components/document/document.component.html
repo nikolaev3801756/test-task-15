@@ -1,0 +1,32 @@
+<div class="container">
+  @let doc = document(); @let containersSize = imgContainersSize();
+  @if (doc !== null) {
+    @for (page of doc.pages; track page.number) {
+      <div class="page">
+        <div #imageContainer class="image-container">
+          <img
+            class="image"
+            [src]="'assets/' + page.imageUrl"
+            [style.height]="
+      containersSize[page.number]
+        ? `${containersSize[page.number].height}px`
+        : 'auto'
+    "
+            [style.width]="
+      containersSize[page.number]
+        ? `${containersSize[page.number].width}px`
+        : 'auto'
+    "
+            (load)="
+              imgInit(
+                page.number,
+                imageContainer.offsetHeight,
+                imageContainer.offsetWidth
+              )
+            "
+          />
+        </div>
+      </div>
+    }
+  }
+</div>
