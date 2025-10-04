@@ -1,9 +1,16 @@
 <nz-layout>
   <nz-header class="header">
-    <h2 class="title"></h2>
+    <h2 class="title">{{ title() }}</h2>
     <tt-viewer-scale-control
       (valueChange)="documentScale.set($event)"
     ></tt-viewer-scale-control>
   </nz-header>
-  <nz-content></nz-content>
+  <nz-content>
+    <nz-spin [nzSpinning]="loadingDocument()">
+      <tt-viewer-document
+        [scale]="documentScale()"
+        [document]="document()"
+      ></tt-viewer-document>
+    </nz-spin>
+  </nz-content>
 </nz-layout>
