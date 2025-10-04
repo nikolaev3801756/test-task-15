@@ -1,4 +1,5 @@
-<div class="container">
+<div class="container" (click)="createAnnotation($event)">
+  <ng-template #annotationContainer></ng-template>
   @let doc = document(); @let containersSize = imgContainersSize();
   @if (doc !== null) {
     @for (page of doc.pages; track page.number) {

@@ -1,0 +1,20 @@
+<div class="arrow" [ngClass]="`${direction().x} ${direction().y}`">
+  <div class="arrow-line left"></div>
+  <div class="arrow-line right"></div>
+</div>
+<div #containerElement class="container">
+  <textarea
+    #inputElement
+    class="input"
+    [(ngModel)]="text"
+    (blur)="onInputBlur()"
+  ></textarea>
+  <button
+    nz-button
+    class="delete-button"
+    nzType="text"
+    (click)="onDelete($event)"
+  >
+    <nz-icon nzType="delete" />
+  </button>
+</div>

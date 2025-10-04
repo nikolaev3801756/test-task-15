@@ -1,16 +1,23 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ComponentRef,
   computed,
+  effect,
   ElementRef,
   inject,
   input,
+  outputBinding,
   signal,
   Signal,
+  viewChild,
+  ViewContainerRef,
   ViewEncapsulation,
 } from '@angular/core';
-import { DocumentDto } from '../../models';
-import { Size } from '../../models/size';
+import { DocumentDto, Size } from '../../models';
+import { AnnotationComponent } from '../annotation/annotation.component';
+import { nameof } from 'ts-simple-nameof';
+import { v4 as createId } from 'uuid';
 
 type ImgContainersSize = Record<number, Size>;
 
@@ -34,6 +41,15 @@ export class DocumentComponent {
 
   private elementRef: ElementRef<HTMLElement> = inject(ElementRef);
 
+  private annotationContainerRef = viewChild('annotationContainer', {
+    read: ViewContainerRef,
+  });
+
+  private annotationComponetRefs: Record<
+    string,
+    ComponentRef<AnnotationComponent>
+  > = {};
+
   constructor() {
     this.imgContainersSize = computed(() => {
       const scale = this.scale();
@@ -52,6 +68,19 @@ export class DocumentComponent {
 
       return result;
     });
+
+    effect(() => {
+      const scale = this.scale();
+
+      for (const key in this.annotationComponetRefs) {
+        const annotationRef = this.annotationComponetRefs[key];
+
+        annotationRef.setInput(
+          nameof<AnnotationComponent>((x) => x.offset),
+          scale,
+        );
+      }
+    });
   }
 
   protected imgInit(pageNumber: number, height: number, width: number) {
@@ -67,5 +96,43 @@ export class DocumentComponent {
       result[pageNumber] = { height, width };
       return result;
     });
+  }
+
+  createAnnotation(event: PointerEvent): void {
+    const id = createId();
+
+    const componentRef = this.annotationContainerRef()?.createComponent(
+      AnnotationComponent,
+      {
+        bindings: [
+          outputBinding(
+            nameof<AnnotationComponent>((x) => x.delete),
+            this.deleteAnnotation(id),
+          ),
+        ],
+      },
+    );
+
+    if (componentRef !== undefined) {
+      const scale = this.scale();
+
+      componentRef.setInput(
+        nameof<AnnotationComponent>((x) => x.point),
+        { x: event.layerX / scale, y: event.layerY / scale },
+      );
+
+      componentRef.setInput(
+        nameof<AnnotationComponent>((x) => x.offset),
+        this.scale(),
+      );
+
+      this.annotationComponetRefs[id] = componentRef;
+    }
+  }
+
+  private deleteAnnotation(id: string): () => void {
+    return () => {
+      this.annotationComponetRefs[id].destroy();
+    };
   }
 }
