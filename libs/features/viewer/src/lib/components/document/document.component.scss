@@ -4,6 +4,7 @@
   overflow: auto;
   text-align: center;
   background: #f5f5f5;
+  position: relative;
 }
 
 .container {
@@ -25,4 +26,10 @@
   transition:
     height 0.3s 0s ease-in-out,
     width 0.3s 0s ease-in-out;
+}
+
+.save-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
 }

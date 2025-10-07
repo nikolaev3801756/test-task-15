@@ -1,5 +1,5 @@
 import { Injectable, Resource } from '@angular/core';
-import { DocumentDto } from '../models';
+import { DocumentDto, SaveDocumentDto } from '../models';
 import { delay, of } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
 
@@ -38,5 +38,9 @@ export class ApiService {
       },
       defaultValue: null,
     }).asReadonly();
+  }
+
+  saveDocument(document: SaveDocumentDto): void {
+    console.log(document);
   }
 }

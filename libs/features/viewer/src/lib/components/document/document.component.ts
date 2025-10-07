@@ -7,6 +7,7 @@ import {
   ElementRef,
   inject,
   input,
+  output,
   outputBinding,
   signal,
   Signal,
@@ -14,10 +15,11 @@ import {
   ViewContainerRef,
   ViewEncapsulation,
 } from '@angular/core';
-import { DocumentDto, Size } from '../../models';
+import { AnnotationDto, DocumentDto, Size } from '../../models';
 import { AnnotationComponent } from '../annotation/annotation.component';
 import { nameof } from 'ts-simple-nameof';
 import { v4 as createId } from 'uuid';
+import { NzButtonComponent } from 'ng-zorro-antd/button';
 
 type ImgContainersSize = Record<number, Size>;
 
@@ -25,7 +27,7 @@ const PADDING = 16;
 
 @Component({
   selector: 'tt-viewer-document',
-  imports: [],
+  imports: [NzButtonComponent],
   templateUrl: './document.component.html',
   styleUrl: './document.component.scss',
   encapsulation: ViewEncapsulation.Emulated,
@@ -34,6 +36,8 @@ const PADDING = 16;
 export class DocumentComponent {
   scale = input<number>(1);
   document = input.required<DocumentDto | null>();
+
+  save = output<AnnotationDto[]>();
 
   private imgContainersInitialSize = signal<ImgContainersSize>({});
 
@@ -83,6 +87,23 @@ export class DocumentComponent {
     });
   }
 
+  onSave(): void {
+    const result: AnnotationDto[] = [];
+
+    for (const key in this.annotationComponetRefs) {
+      const element = this.annotationComponetRefs[key];
+      const text = element.instance.text();
+      if (!text) {
+        continue;
+      }
+
+      const point = element.instance.point();
+      result.push({ x: point.x, y: point.y, text: text });
+    }
+
+    this.save.emit(result);
+  }
+
   protected imgInit(pageNumber: number, height: number, width: number) {
     const maxWidth = this.elementRef.nativeElement.offsetWidth - PADDING * 2;
 
@@ -98,7 +119,7 @@ export class DocumentComponent {
     });
   }
 
-  createAnnotation(event: PointerEvent): void {
+  protected createAnnotation(event: PointerEvent): void {
     const id = createId();
 
     const componentRef = this.annotationContainerRef()?.createComponent(
@@ -117,7 +138,7 @@ export class DocumentComponent {
       const scale = this.scale();
 
       componentRef.setInput(
-        nameof<AnnotationComponent>((x) => x.point),
+        nameof<AnnotationComponent>((x) => x.startPoint),
         { x: event.layerX / scale, y: event.layerY / scale },
       );
 
@@ -133,6 +154,8 @@ export class DocumentComponent {
   private deleteAnnotation(id: string): () => void {
     return () => {
       this.annotationComponetRefs[id].destroy();
+
+      delete this.annotationComponetRefs[id];
     };
   }
 }

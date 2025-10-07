@@ -10,6 +10,7 @@
       <tt-viewer-document
         [scale]="documentScale()"
         [document]="document()"
+        (save)="onSave($event)"
       ></tt-viewer-document>
     </nz-spin>
   </nz-content>

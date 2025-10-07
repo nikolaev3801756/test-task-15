@@ -2,13 +2,16 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   ElementRef,
   HostListener,
   inject,
   input,
   model,
+  OnDestroy,
   OnInit,
   output,
+  signal,
   Signal,
   viewChild,
   ViewEncapsulation,
@@ -43,24 +46,40 @@ interface Position {
     '[style.right]': 'position().right',
     '[style.top]': 'position().top',
     '[style.bottom]': 'position().bottom',
+    '[class.dragging]': 'isDragging()',
   },
 })
-export class AnnotationComponent implements OnInit {
+export class AnnotationComponent implements OnInit, OnDestroy {
   @HostListener('click', ['$event'])
   onClick(event: Event): void {
     event.stopPropagation();
   }
 
-  point = input.required<Point>();
+  @HostListener('mousedown', ['$event'])
+  onMouseDown(event: Event): void {
+    event.stopPropagation();
+    this.isDragging.set(true);
+
+    const parentElement = this.elementRef.nativeElement.parentElement!;
+
+    parentElement.addEventListener('mousemove', this.onParentMouseMove);
+    parentElement.addEventListener('mouseup', this.onParentMouseUp);
+  }
+
+  startPoint = input.required<Point>();
+  pointChange = output<Point>();
+
   offset = input.required<number>();
 
   delete = output();
 
+  point = signal<Point>({ x: 0, y: 0 });
+  text = model<string>();
+  protected isDragging = signal<boolean>(false);
   protected inputElement =
     viewChild<ElementRef<HTMLInputElement>>('inputElement');
   protected containerElement =
     viewChild<ElementRef<HTMLInputElement>>('containerElement');
-  protected text = model<string>();
   protected coordinates: Signal<Point>;
   protected direction: Signal<Direction>;
   protected position: Signal<Position>;
@@ -74,6 +93,10 @@ export class AnnotationComponent implements OnInit {
   }
 
   constructor() {
+    effect(() => {
+      this.point.set(this.startPoint());
+    });
+
     this.coordinates = computed(() => {
       const point = this.point();
       const offset = this.offset();
@@ -161,14 +184,20 @@ export class AnnotationComponent implements OnInit {
   ngOnInit(): void {
     this.inputFocus();
 
-    const parentElementRect =
-      this.elementRef.nativeElement.parentElement!.getClientRects()[0];
+    const parentElement = this.elementRef.nativeElement.parentElement!;
+    const parentElementRect = parentElement.getClientRects()[0];
     const offset = this.offset();
 
     this.parentElementOriginalSize = {
       width: parentElementRect.width / offset,
       height: parentElementRect.height / offset,
     };
+  }
+
+  ngOnDestroy(): void {
+    const parentElement = this.elementRef.nativeElement.parentElement;
+    parentElement?.removeEventListener('mousemove', this.onParentMouseMove);
+    parentElement?.removeEventListener('mouseup', this.onParentMouseUp);
   }
 
   protected inputFocus(): void {
@@ -182,4 +211,38 @@ export class AnnotationComponent implements OnInit {
       this.delete.emit();
     }
   }
+
+  private onParentMouseUp = (event: any): void => {
+    this.isDragging.set(false);
+
+    const parentElement = this.elementRef.nativeElement.parentElement!;
+    parentElement.removeEventListener('mousemove', this.onParentMouseMove);
+    parentElement.removeEventListener('mouseup', this.onParentMouseUp);
+  };
+
+  private onParentMouseMove = (event: MouseEvent): void => {
+    if (!this.isDragging()) {
+      return;
+    }
+
+    const element = this.elementRef.nativeElement;
+    const parentElement = element.parentElement!;
+
+    const parentClientRects = parentElement.getClientRects()[0];
+
+    let x = event.clientX / this.offset() - parentClientRects.x / this.offset();
+    let y = event.clientY / this.offset() - parentClientRects.y / this.offset();
+
+    x = Math.max(
+      0,
+      Math.min(x, this.parentElementOriginalSize.width * this.offset()),
+    );
+    y = Math.max(
+      0,
+      Math.min(y, this.parentElementOriginalSize.height * this.offset()),
+    );
+
+    this.point.set({ x: x, y: y });
+    this.pointChange.emit({ x: x, y: y });
+  };
 }
